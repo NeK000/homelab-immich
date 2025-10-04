@@ -1,47 +1,42 @@
 services:
-  llama-open-webui:
-    image: "ghcr.io/open-webui/open-webui:0.6.32"
-    container_name: "open-webui"
+  immich:
+    image: "ghcr.io/imagegenius/immich:2.0.0"
+    container_name: "Immich_Application"
     environment:
-      TZ: "Europe/Paris"
-      HOST_OS: "Unraid"
-      HOST_HOSTNAME: "Tower"
-      HOST_CONTAINERNAME: "open-webui"
-      OLLAMA_BASE_URL: "http://10.10.1.20:11434"
-      CA_TS_FALLBACK_DIR: "/app/backend/data"
+      - "NVIDIA_VISIBLE_DEVICES=all"
+      - "NVIDIA_DRIVER_CAPABILITIES=all"
+      - "HOST_OS=Unraid"
+      - "HOST_HOSTNAME=Tower"
+      - "HOST_CONTAINERNAME=immich"
+      - "DB_HOSTNAME=${IMMICH_ADDRESS}"
+      - "DB_PORT=${IMMICH_DB_PORT}"
+      - "DB_USERNAME=postgres"
+      - "DB_PASSWORD=${IMMICH_DB_PASSWORD}"
+      - "DB_DATABASE_NAME=immich"
+      - "REDIS_HOSTNAME=${IMMICH_ADDRESS}"
+      - "REDIS_PORT=6379"
+      - "REDIS_PASSWORD=''"
+      - "MACHINE_LEARNING_HOST=0.0.0.0"
+      - "MACHINE_LEARNING_PORT=3003"
+      - "MACHINE_LEARNING_WORKERS=1"
+      - "MACHINE_LEARNING_WORKER_TIMEOUT=120"
+      - "PUID=99"
+      - "PGID=100"
+      - "UMASK=022"
     labels:
-      tsdproxy.enable: "true"
-      tsdproxy.name: "llama-ui"
-      tsdproxy.ephemeral: "true"
-      net.unraid.docker.managed: "dockerman"
-      net.unraid.docker.webui: "http://[IP]:[PORT:8081]/"
-      net.unraid.docker.icon: "https://raw.githubusercontent.com/open-webui/open-webui/main/static/favicon.png"
+      "net.unraid.docker.managed": "dockerman"
+      "net.unraid.docker.webui": "http://[IP]:[PORT:8080]"
+      "net.unraid.docker.icon": "https://raw.githubusercontent.com/imagegenius/templates/main/unraid/img/immich.png"
+      "tsdproxy.enable": "true"
+      "tsdproxy.name": "immich"
+      "tsdproxy.container_port": "8080"
+      "tsdproxy.ephemeral": "true"
     ports:
-      - "8081:8080"
+      - "8080:8080"
     volumes:
-      - "${appdata_path}/ollama-webui:/app/backend/data"
-
-  llama-ollama:
-    image: "ollama/ollama:0.12.3"
-    container_name: "ollama"
-    ports:
-      - "11434:11434"
-    environment:
-      TZ: "Europe/Paris"
-      HOST_OS: "Unraid"
-      HOST_HOSTNAME: "Tower"
-      HOST_CONTAINERNAME: "ollama"
-      OLLAMA_ORIGINS: "*"
-      CA_TS_FALLBACK_DIR: "/root/.ollama"
-    labels:
-      tsdproxy.enable: "true"
-      tsdproxy.name: "ollama"
-      tsdproxy.ephemeral: "true"
-      net.unraid.docker.managed: "dockerman"
-      net.unraid.docker.webui: "http://[IP]:[PORT:11434]/"
-      net.unraid.docker.icon: "https://ollama.ai/public/ollama.png"
-    volumes:
-      - "${appdata_path}/ollama:/root/.ollama:rw"
+      - "${appdata_path}/immich/photos:/photos:rw"
+      - "${appdata_path}/immich/libs:/libraries:rw"
+      - "${appdata_path}/immich:/config:rw"
     deploy:
       resources:
         reservations:
@@ -49,3 +44,33 @@ services:
             - driver: "nvidia"
               count: "all"
               capabilities: ["gpu"]
+    runtime: "nvidia"
+
+  postgresql_immich:
+    image: "tensorchord/pgvecto-rs:pg16-v0.3.0"
+    container_name: "PostgreSQL_Immich"
+    environment:
+      - "TZ=Europe/Paris"
+      - "HOST_OS=Unraid"
+      - "HOST_HOSTNAME=Tower"
+      - "HOST_CONTAINERNAME=PostgreSQL_Immich"
+      - "POSTGRES_PASSWORD=${IMMICH_DB_PASSWORD}"
+      - "POSTGRES_USER=postgres"
+      - "POSTGRES_DB=immich"
+    labels:
+      "net.unraid.docker.managed": "dockerman"
+    volumes:
+      - "${appdata_path}/PostgreSQL_Immich:/var/lib/postgresql/data:rw"
+    ports:
+      - "${IMMICH_DB_PORT}:5432"
+
+  immich-redis:
+    image: "redis:8.2.1"
+    container_name: "Immich-Redis"
+    environment:
+      - "TZ=Europe/Paris"
+      - "HOST_OS=Unraid"
+      - "HOST_HOSTNAME=Tower"
+      - "HOST_CONTAINERNAME=Immich-Redis"
+    ports:
+      - "6379:6379"
