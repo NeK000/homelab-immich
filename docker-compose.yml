@@ -1,6 +1,6 @@
 services:
   immich:
-    image: "ghcr.io/imagegenius/immich:2.0.0"
+    image: "ghcr.io/imagegenius/immich:2.0.1"
     container_name: "Immich_Application"
     environment:
       - "NVIDIA_VISIBLE_DEVICES=all"
