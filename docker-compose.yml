@@ -65,7 +65,7 @@ services:
       - "${IMMICH_DB_PORT}:5432"
 
   immich-redis:
-    image: "redis:8.2.1"
+    image: "redis:8.2.2"
     container_name: "Immich-Redis"
     environment:
       - "TZ=Europe/Paris"
